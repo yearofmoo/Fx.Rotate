@@ -25,7 +25,9 @@ Fx.Rotate = new Class({
   Extends : Fx,
 
   options : {
-    ieFps : 40
+    ieFps : 40,
+    origin : 'center center',
+    normalizeDegreeAfterComplete : true
   },
 
   initialize : function(element,options) {
@@ -47,7 +49,7 @@ Fx.Rotate = new Class({
 
       //set the default origin
       var accessorOrigin = accessor + 'TransformOrigin';
-      this.element.style[accessorOrigin] = 'center center';
+      this.element.style[accessorOrigin] = this.options.origin;
 
       //set the rotation method
       this.set = this._setTransformMethod();
@@ -56,6 +58,10 @@ Fx.Rotate = new Class({
       this.options.fps = this.options.ieFps || this.options.fps;
       this.set = this._setIEMethod();
     }
+
+    if(this.options.normalizeDegreeAfterComplete) {
+      this.addEvent('complete',this.normalizeDegree);
+    }
   },
 
   start : function(from,to) {
@@ -63,6 +69,8 @@ Fx.Rotate = new Class({
       to = from;
       from = this.getCurrentRotation();
     }
+    this.degreeFrom = from;
+    this.degreeTo = to;
     this.parent(from,to);
   },
 
@@ -78,6 +86,12 @@ Fx.Rotate = new Class({
 
   normalize : function(skip) {
     (skip ? this.set : this.start)(0);
+  },
+
+  normalizeDegree : function() {
+    var CIRCLE = 360;
+    var fin = this.degreeTo % CIRCLE;
+    this.set(fin);
   },
 
   _setIEMethod : function() {
