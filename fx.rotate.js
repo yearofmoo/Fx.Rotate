@@ -53,7 +53,6 @@ Fx.Rotate = new Class({
 
       //set the default origin
       var accessorOrigin = accessor + 'TransformOrigin';
-      this.element.style['transform-origin'] = this.options.origin;
       this.element.style[accessorOrigin] = this.options.origin;
 
       //set the rotation method
@@ -74,32 +73,40 @@ Fx.Rotate = new Class({
       to = from;
       from = this.getCurrentRotation();
     }
-    this.degreeFrom = from;
-    this.degreeTo = to;
-    this.parent(from,to);
+    this.degreeFrom = from.toInt();
+    this.degreeTo = to.toInt();
+    this.parent(this.degreeFrom,this.degreeTo);
   },
 
   getCurrentRotation : function() {
-    var rotation = 0;
+
+    var rotation;
+
     if(this.transforms) {
 
       //this is required to find the full css style for the element (style and css)
 
-      //the full style for css3transform
-      var style = (this.element.style['transform'] || '') + ' ' + (document.defaultView.getComputedStyle(this.element,null).getPropertyValue('transform') || '');
-      style = style.trim();
-      if(style.length == 0) {
-
-        //get the vendor prefix style value
+      var style;
+      if(Browser.ie) {
+        style = (this.element.style['transform'] || '') + ' ' +
+                (this.element.style['-ms-transform'] || '') + ' ' +
+                (this.element.currentStyle['transform'] || '') + ' ' +
+                (this.element.currentStyle['-ms-transform'] || '') + ' ';
+      }
+      else {
         var accessor = this.accessor;
         if(!Browser.firefox) {
           accessor = Browser.vendorPrefix+'transform';
         }
 
-        style = (this.element.style[this.accessor] | '') + ' ' + (document.defaultView.getComputedStyle(this.element,null).getPropertyValue(accessor) || '');
-        style = style.trim();
+        //get the full style ... in order of css3 style, css3 vendor style, css3 stylesheet, css3 vendor stylesheet
+        style = (this.element.style['transform'] || '') + ' ' +
+                (this.element.style[this.accessor] || '') + ' ' +
+                (document.defaultView.getComputedStyle(this.element,null).getPropertyValue('transform') || '') +
+                (document.defaultView.getComputedStyle(this.element,null).getPropertyValue(accessor) || '');
       }
 
+      style = style.trim();
       if(style.length > 0) {
         var rotateResults = style.match(/rotate\((\d+).*?\)/);
         if(rotateResults && rotateResults.length > 1) {
@@ -117,8 +124,8 @@ Fx.Rotate = new Class({
         }
       }
     }
-    else if(Browser.ie && this.element.filters.length > 0) { //ie
 
+    if(rotation == null && Browser.ie && this.element.filters && this.element.filters.length > 0) { //ie
       var isMatrix, isBasic;
       for(var i in this.element.filters) {
         if(i == 'DXImageTransform.Microsoft.BasicImage') {
@@ -149,11 +156,12 @@ Fx.Rotate = new Class({
         }
       }
     }
-    return rotation;
+
+    return rotation || 0;
   },
 
   normalize : function(skip) {
-    (skip ? this.set : this.start)(0);
+    (skip ? this.set : this.start).apply(this,[0]);
   },
 
   normalizeDegree : function() {
