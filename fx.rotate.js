@@ -62,7 +62,7 @@ Fx.Rotate = new Class({
     }
     else { //ie6,ie7,ie8
       var QUADRANT_DEGREES = 90;
-      var style = this.element.style.filter;
+      var style = this.element.style.filter || '';
       var matches = style.match(/\brotation=(.+)\b/);
       rotation = (matches > 0 ? matches[1] : 0).toInt() * QUADRANT_DEGREE;
     }
