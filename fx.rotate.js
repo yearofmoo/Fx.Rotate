@@ -30,6 +30,10 @@ Fx.Rotate = new Class({
     normalizeDegreeAfterComplete : true
   },
 
+  CIRCLE : 360,
+  HALF_A_CIRCLE : 180,
+  RIGHT_ANGLE : 90,
+
   initialize : function(element,options) {
     this.prefix = Browser.vendorPrefix;
     this.transforms = !Browser.ie || Browser.ie9 || Browser.ie10;
@@ -87,17 +91,49 @@ Fx.Rotate = new Class({
       //the full style
       var style = this.element.style[this.accessor] + ' ' + document.defaultView.getComputedStyle(this.element,null).getPropertyValue(accessor);
 
-      var matches = style.match(/rotate\((\d+).*?\)/);
-      if(matches && matches.length > 1) {
-        rotation = matches && matches.length > 1 ? matches[1] : 0;
+      var rotateResults = style.match(/rotate\((\d+).*?\)/);
+      if(rotateResults && rotateResults.length > 1) {
+        rotation = rotateResults && rotateResults.length > 1 ? rotateResults[1] : 0;
       }
       else { 
         // this will return the default value based off the transform using the inverse of cos
-        var matrixResults = style.match(/matrix\((.+?)\)/);
+        var matrixResults = style.match(/matrix\((.+?),.+?\)/);
         if(matrixResults && matrixResults.length > 1) {
-          var costheta = matrixResults[1].split(/\s*,\s*/)[0];
+          var costheta = matrixResults[1];
           var cos = Math.acos(costheta);
-          var deg = Math.round((cos * 180) / Math.PI);
+          var deg = Math.round((cos * this.HALF_A_CIRCLE) / Math.PI);
+          rotation = deg && deg != 0 ? deg : 0;
+        }
+      }
+    }
+    else if(Browser.ie && this.element.filters.length > 0) { //ie
+
+      var isMatrix, isBasic;
+      for(var i in this.element.filters) {
+        if(i == 'DXImageTransform.Microsoft.BasicImage') {
+          isRotation = true;
+          break;
+        }
+        if(i == 'DXImageTransform.Microsoft.Matrix') {
+          isMatrix = true;
+          break;
+        }
+      }
+
+      if(isBasic) {
+        var basic = this.element.filters('DXImageTransform.Microsoft.BasicImage');
+        if(basic && basic.Rotation!=null) {
+          rotation = Math.round(basic.Rotation * this.RIGHT_ANGLE);
+        }
+        this.element.filters(0).enabled = 0;
+      }
+      else if(isMatrix) {
+        var matrix = this.element.filters('DXImageTransform.Microsoft.Matrix');
+        matrix.SizingMethod = 'auto expand';
+        if(matrix && matrix.M11) {
+          var costheta = matrix.M11;
+          var cos = Math.acos(costheta);
+          var deg = Math.round((cos * this.HALF_A_CIRCLE) / Math.PI);
           rotation = deg && deg != 0 ? deg : 0;
         }
       }
@@ -110,15 +146,27 @@ Fx.Rotate = new Class({
   },
 
   normalizeDegree : function() {
-    var CIRCLE = 360;
-    var fin = this.degreeTo % CIRCLE;
+    var fin = this.degreeTo % this.CIRCLE;
     this.set(fin);
   },
 
   _setIEMethod : function() {
-    this.deg2radians = Math.PI / 180;
+
+    //the element needs to have the boolean enabled : hasLayout (zoom does this)
     this.element.style.zoom = "1";
-    this.element.style.filter = "progid:DXImageTransform.Microsoft.Matrix(sizingMethod='auto expand',M11=1, M12=-1, M21=-1, M22=1)"
+    this.deg2radians = Math.PI / this.HALF_A_CIRCLE;
+
+    //normalize the rotation for ie
+    var rotation = this.getCurrentRotation();
+
+    //setup the first matrix values so that it won't flicker
+    var rad = this.deg2radians * rotation;
+    costheta = Math.cos(rad);
+    sintheta = Math.sin(rad);
+    this.element.style.filter = "progid:DXImageTransform.Microsoft.Matrix(sizingMethod='auto expand',M11="+costheta+", M12="+sintheta+", M21="+(0-sintheta)+", M22="+costheta+")";
+    this.set(rotation);
+
+    //setup the function for rotation for ie
     return function(rotation) {
       var rad = this.deg2radians * rotation;
       costheta = Math.cos(rad);
@@ -141,13 +189,13 @@ Fx.Rotate = new Class({
 
 Element.implement({
 
-  rotate : function(from,toOrSkip) {
+  rotate : function(fromOrTo,toOrSkip) {
     var rotate = $(this).get('rotate');
     if(toOrSkip === true) {
-      rotate.set(from);
+      rotate.set(fromOrTo);
     }
     else {
-      rotate.start(from,toOrSkip);
+      rotate.start(fromOrTo,toOrSkip);
     }
     return rotate;
   },

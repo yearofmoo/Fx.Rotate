@@ -10,6 +10,7 @@
   height:60px;
   background:red;
   -webkit-transform: rotate(30deg);
+  filter: progid:DXImageTransform.Microsoft.Matrix(sizingMethod='auto expand',M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
 }
 </style>
 </head> 
@@ -25,7 +26,8 @@ window.addEvent('domready',function() {
   $('r').set('rotate',{
     duration : 1000
   });
-  $('r').rotate(720);
+
+  $('r').rotate(390);
 });
 </script>
 </body>
