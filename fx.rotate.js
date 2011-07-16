@@ -1,5 +1,8 @@
 (function($,$$) {
 
+//IE 10 detection
+Browser.ie10 = Browser.ie && !Browser.ie9 && navigator.userAgent.test(/Trident\/6\.0/);
+
 //each browser has it own vendor prefix
 if(Browser.chrome || Browser.safari) {
   Browser.vendorPrefix = '-webkit-';
@@ -27,7 +30,7 @@ Fx.Rotate = new Class({
 
   initialize : function(element,options) {
     this.prefix = Browser.vendorPrefix;
-    this.transforms = !Browser.ie || Browser.ie9;
+    this.transforms = !Browser.ie || Browser.ie9 || Browser.ie10;
     this.element = $(element);
     this.accessor = '';
 
@@ -67,7 +70,7 @@ Fx.Rotate = new Class({
     var rotation = 0;
     if(this.transforms) {
       var prefix = Browser.vendorPrefix;
-      var matches = this.element.style[this.accessor].toString().match(/rotate\((\d+).*?\)/);
+      var matches = (this.element.style[this.accessor] || '').toString().match(/rotate\((\d+).*?\)/);
       rotation = matches && matches.length > 1 ? matches[1] : 0;
     }
     return rotation;
