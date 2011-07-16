@@ -60,7 +60,7 @@ Fx.Rotate = new Class({
     }
 
     if(this.options.normalizeDegreeAfterComplete) {
-      this.addEvent('complete',this.normalizeDegree);
+      this.addEvent('complete',this.normalizeDegree.bind(this));
     }
   },
 
@@ -77,9 +77,30 @@ Fx.Rotate = new Class({
   getCurrentRotation : function() {
     var rotation = 0;
     if(this.transforms) {
-      var prefix = Browser.vendorPrefix;
-      var matches = (this.element.style[this.accessor] || '').toString().match(/rotate\((\d+).*?\)/);
-      rotation = matches && matches.length > 1 ? matches[1] : 0;
+
+      //this is required to find the full css style for the element (style and css)
+      var accessor = this.accessor;
+      if(!Browser.firefox) {
+        accessor = Browser.vendorPrefix+'transform';
+      }
+
+      //the full style
+      var style = this.element.style[this.accessor] + ' ' + document.defaultView.getComputedStyle(this.element,null).getPropertyValue(accessor);
+
+      var matches = style.match(/rotate\((\d+).*?\)/);
+      if(matches && matches.length > 1) {
+        rotation = matches && matches.length > 1 ? matches[1] : 0;
+      }
+      else { 
+        // this will return the default value based off the transform using the inverse of cos
+        var matrixResults = style.match(/matrix\((.+?)\)/);
+        if(matrixResults && matrixResults.length > 1) {
+          var costheta = matrixResults[1].split(/\s*,\s*/)[0];
+          var cos = Math.acos(costheta);
+          var deg = Math.round((cos * 180) / Math.PI);
+          rotation = deg && deg != 0 ? deg : 0;
+        }
+      }
     }
     return rotation;
   },
@@ -95,7 +116,8 @@ Fx.Rotate = new Class({
   },
 
   _setIEMethod : function() {
-    this.deg2radians = Math.PI * 2 / 360;
+    this.deg2radians = Math.PI / 180;
+    this.element.style.zoom = "1";
     this.element.style.filter = "progid:DXImageTransform.Microsoft.Matrix(sizingMethod='auto expand',M11=1, M12=-1, M21=-1, M22=1)"
     return function(rotation) {
       var rad = this.deg2radians * rotation;
