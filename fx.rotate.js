@@ -10,7 +10,7 @@ else if(Browser.firefox) {
 else if(Browser.opera) {
   Browser.vendorPrefix = '-o-';
 }
-else if(Browser.ie9 || Browser.ie8) {
+else if(Browser.ie10 || Browser.ie9 || Browser.ie8) {
   Browser.vendorPrefix = '-ms-';
 }
 else {
@@ -36,7 +36,7 @@ Fx.Rotate = new Class({
       var accessor = this.prefix.replace(/-/g,'');
 
       //all other browsers like the uppercase start value
-      if(!Browser.ie9) {
+      if(!Browser.ie9 && !Browser.ie10) {
         accessor = accessor.charAt(0).toUpperCase() + accessor.substr(1);
       }
 
@@ -73,8 +73,8 @@ Fx.Rotate = new Class({
     return rotation;
   },
 
-  normalize : function() {
-    this.set(0);
+  normalize : function(skip) {
+    (skip ? this.set : this.start)(0);
   },
 
   _setIEMethod : function() {
@@ -113,9 +113,9 @@ Element.implement({
     return rotate;
   },
 
-  normalize : function() {
+  normalize : function(skip) {
     var rotate = $(this).get('rotate');
-    rotate.normalize();
+    rotate.normalize(skip);
     return rotate;
   }
 
