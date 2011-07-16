@@ -53,6 +53,7 @@ Fx.Rotate = new Class({
 
       //set the default origin
       var accessorOrigin = accessor + 'TransformOrigin';
+      this.element.style['transform-origin'] = this.options.origin;
       this.element.style[accessorOrigin] = this.options.origin;
 
       //set the rotation method
@@ -83,26 +84,36 @@ Fx.Rotate = new Class({
     if(this.transforms) {
 
       //this is required to find the full css style for the element (style and css)
-      var accessor = this.accessor;
-      if(!Browser.firefox) {
-        accessor = Browser.vendorPrefix+'transform';
+
+      //the full style for css3transform
+      var style = (this.element.style['transform'] || '') + ' ' + (document.defaultView.getComputedStyle(this.element,null).getPropertyValue('transform') || '');
+      style = style.trim();
+      if(style.length == 0) {
+
+        //get the vendor prefix style value
+        var accessor = this.accessor;
+        if(!Browser.firefox) {
+          accessor = Browser.vendorPrefix+'transform';
+        }
+
+        style = (this.element.style[this.accessor] | '') + ' ' + (document.defaultView.getComputedStyle(this.element,null).getPropertyValue(accessor) || '');
+        style = style.trim();
       }
 
-      //the full style
-      var style = this.element.style[this.accessor] + ' ' + document.defaultView.getComputedStyle(this.element,null).getPropertyValue(accessor);
-
-      var rotateResults = style.match(/rotate\((\d+).*?\)/);
-      if(rotateResults && rotateResults.length > 1) {
-        rotation = rotateResults && rotateResults.length > 1 ? rotateResults[1] : 0;
-      }
-      else { 
-        // this will return the default value based off the transform using the inverse of cos
-        var matrixResults = style.match(/matrix\((.+?),.+?\)/);
-        if(matrixResults && matrixResults.length > 1) {
-          var costheta = matrixResults[1];
-          var cos = Math.acos(costheta);
-          var deg = Math.round((cos * this.HALF_A_CIRCLE) / Math.PI);
-          rotation = deg && deg != 0 ? deg : 0;
+      if(style.length > 0) {
+        var rotateResults = style.match(/rotate\((\d+).*?\)/);
+        if(rotateResults && rotateResults.length > 1) {
+          rotation = rotateResults && rotateResults.length > 1 ? rotateResults[1] : 0;
+        }
+        else { 
+          // this will return the default value based off the transform using the inverse of cos
+          var matrixResults = style.match(/matrix\((.+?),.+?\)/);
+          if(matrixResults && matrixResults.length > 1) {
+            var costheta = matrixResults[1];
+            var cos = Math.acos(costheta);
+            var deg = Math.round((cos * this.HALF_A_CIRCLE) / Math.PI);
+            rotation = deg && deg != 0 ? deg : 0;
+          }
         }
       }
     }
