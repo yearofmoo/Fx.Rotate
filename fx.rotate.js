@@ -10,7 +10,7 @@ else if(Browser.firefox) {
 else if(Browser.opera) {
   Browser.vendorPrefix = '-o-';
 }
-else if(Browser.ie) {
+else if(Browser.ie9 || Browser.ie8) {
   Browser.vendorPrefix = '-ms-';
 }
 else {
@@ -21,21 +21,38 @@ Fx.Rotate = new Class({
 
   Extends : Fx,
 
+  options : {
+    ieFps : 40
+  },
+
   initialize : function(element,options) {
     this.prefix = Browser.vendorPrefix;
     this.transforms = !Browser.ie || Browser.ie9;
     this.element = $(element);
-    
-    if(!this.transforms) {
-      this.set = this._setIEMethod();
+    this.accessor = '';
+
+    this.parent(options);
+    if(this.transforms) {
+      var accessor = this.prefix.replace(/-/g,'');
+
+      //all other browsers like the uppercase start value
+      if(!Browser.ie9) {
+        accessor = accessor.charAt(0).toUpperCase() + accessor.substr(1);
+      }
+
+      this.accessor = accessor + 'Transform';
+
+      //set the default origin
+      var accessorOrigin = accessor + 'TransformOrigin';
+      this.element.style[accessorOrigin] = 'center center';
+
+      //set the rotation method
+      this.set = this._setTransformMethod();
     }
     else {
-      var prefix = Browser.vendorPrefix;
-      this.set = this._setTransformMethod();
-      this.element.setStyle(prefix+'transform-origin','center center');
+      this.options.fps = this.options.ieFps || this.options.fps;
+      this.set = this._setIEMethod();
     }
-
-    this.parent(this.element,options);
   },
 
   start : function(from,to) {
@@ -43,28 +60,15 @@ Fx.Rotate = new Class({
       to = from;
       from = this.getCurrentRotation();
     }
-    if(!this.transforms) {
-      //ie only - requires a range between 0 and 4
-      var CIRCLE = 360;
-      var QUADRANTS = 4;
-      from = from > 0 ? (from / CIRCLE) * QUADRANTS : 0;
-      to = to > 0 ? (to / CIRCLE) * QUADRANTS : 0;
-    }
     this.parent(from,to);
   },
 
   getCurrentRotation : function() {
-    var rotation;
+    var rotation = 0;
     if(this.transforms) {
       var prefix = Browser.vendorPrefix;
-      var matches = (this.element.setStyle(prefix+'transform') || '').match(/rotate\((\d+).*?\)/);
-      rotation = matches.length > 1 ? matches[1] : 0;
-    }
-    else { //ie6,ie7,ie8
-      var QUADRANT_DEGREES = 90;
-      var style = this.element.style.filter || '';
-      var matches = style.match(/\brotation=(.+)\b/);
-      rotation = (matches > 0 ? matches[1] : 0).toInt() * QUADRANT_DEGREE;
+      var matches = this.element.style[this.accessor].toString().match(/rotate\((\d+).*?\)/);
+      rotation = matches && matches.length > 1 ? matches[1] : 0;
     }
     return rotation;
   },
@@ -74,15 +78,23 @@ Fx.Rotate = new Class({
   },
 
   _setIEMethod : function() {
+    this.deg2radians = Math.PI * 2 / 360;
+    this.element.style.filter = "progid:DXImageTransform.Microsoft.Matrix(sizingMethod='auto expand',M11=1, M12=-1, M21=-1, M22=1)"
     return function(rotation) {
-      this.element.style.filter = 'progid:DXImageTransform.Microsoft.BasicImage(rotation='+rotation+')';
+      var rad = this.deg2radians * rotation;
+      costheta = Math.cos(rad);
+      sintheta = Math.sin(rad);
+      this.element.filters(0).M11 = costheta;
+      this.element.filters(0).M12 = -sintheta;
+      this.element.filters(0).M21 = sintheta;
+      this.element.filters(0).M22 = costheta;
     }.bind(this);
   },
 
   _setTransformMethod : function() {
     var prefix = Browser.vendorPrefix;
     return function(rotation) {
-      this.element.setStyle(prefix+'transform','rotate('+rotation+'deg)');
+      this.element.style[this.accessor] = 'rotate('+rotation+'deg)';
     }.bind(this);
   }
 
@@ -90,9 +102,14 @@ Fx.Rotate = new Class({
 
 Element.implement({
 
-  rotate : function(from,to) {
+  rotate : function(from,toOrSkip) {
     var rotate = $(this).get('rotate');
-    rotate.start(from,to);
+    if(toOrSkip === true) {
+      rotate.set(from);
+    }
+    else {
+      rotate.start(from,toOrSkip);
+    }
     return rotate;
   },
 
@@ -109,13 +126,15 @@ Element.Properties.rotate = {
   get : function() {
     var rotate = $(this).retrieve('Fx.Rotate');
     if(!rotate) {
-      rotate = new Fx.Rotate(this);
+      rotate = this.set('rotate',{});
     }
     return rotate;
   },
 
   set : function(options) {
-    this.get('rotate').options = options;
+    var rotate = new Fx.Rotate(this,options);
+    this.store('Fx.Rotate',rotate);
+    return rotate;
   }
 
 };
