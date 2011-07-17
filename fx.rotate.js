@@ -25,8 +25,11 @@ Fx.Rotate = new Class({
   Extends : Fx,
 
   options : {
-    ieFps : 40,
+    fps : 40,
+    ieFps : 30,
     origin : 'center center',
+    cornerOrigin : true,
+    link : 'cancel',
     normalizeDegreeAfterComplete : true
   },
 
@@ -70,12 +73,21 @@ Fx.Rotate = new Class({
 
   start : function(from,to) {
     if(to == null) {
-      to = from;
-      from = this.getCurrentRotation();
+      to = from + '';
+      from = this.getCurrentRotation().toInt();
+      f = to.charAt(0);
+      to = to.toInt();
+      if(f=='+') {
+        to = from + Math.abs(to);
+      }
+      else if(f == '-') {
+        to = from - Math.abs(to);
+      }
     }
     this.degreeFrom = from.toInt();
     this.degreeTo = to.toInt();
     this.parent(this.degreeFrom,this.degreeTo);
+    return this;
   },
 
   getCurrentRotation : function() {
@@ -114,11 +126,11 @@ Fx.Rotate = new Class({
         }
         else { 
           // this will return the default value based off the transform using the inverse of cos
-          var matrixResults = style.match(/matrix\((.+?),.+?\)/);
+          var matrixResults = style.match(/matrix\((.+?),(.+?),.+?\)/);
           if(matrixResults && matrixResults.length > 1) {
-            var costheta = matrixResults[1];
-            var cos = Math.acos(costheta);
-            var deg = Math.round((cos * this.HALF_A_CIRCLE) / Math.PI);
+            var sintheta = matrixResults[2];
+            var sin = Math.asin(sintheta);
+            var deg = Math.round((sin * this.HALF_A_CIRCLE) / Math.PI);
             rotation = deg && deg != 0 ? deg : 0;
           }
         }
@@ -149,9 +161,9 @@ Fx.Rotate = new Class({
         var matrix = this.element.filters('DXImageTransform.Microsoft.Matrix');
         matrix.SizingMethod = 'auto expand';
         if(matrix && matrix.M11) {
-          var costheta = matrix.M11;
-          var cos = Math.acos(costheta);
-          var deg = Math.round((cos * this.HALF_A_CIRCLE) / Math.PI);
+          var sintheta = matrix.M12;
+          var cos = Math.asin(sinetha);
+          var deg = Math.round((sin * this.HALF_A_CIRCLE) / Math.PI);
           rotation = deg && deg != 0 ? deg : 0;
         }
       }
@@ -161,7 +173,15 @@ Fx.Rotate = new Class({
   },
 
   normalize : function(skip) {
-    (skip ? this.set : this.start).apply(this,[0]);
+    if(skip) {
+      this.set(0);
+    }
+    else {
+      var current = this.getCurrentRotation();
+      var magnitude = Math.abs(current);
+      var end = magnitude >= 180 ? 360 : 0;
+      this.start(end);
+    }
   },
 
   normalizeDegree : function() {
@@ -232,7 +252,8 @@ Element.Properties.rotate = {
   get : function() {
     var rotate = $(this).retrieve('Fx.Rotate');
     if(!rotate) {
-      rotate = this.set('rotate',{});
+      this.set('rotate',{});
+      rotate = $(this).retrieve('Fx.Rotate');
     }
     return rotate;
   },
@@ -240,7 +261,6 @@ Element.Properties.rotate = {
   set : function(options) {
     var rotate = new Fx.Rotate(this,options);
     this.store('Fx.Rotate',rotate);
-    return rotate;
   }
 
 };
