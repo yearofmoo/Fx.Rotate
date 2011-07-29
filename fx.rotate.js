@@ -28,7 +28,6 @@ Fx.Rotate = new Class({
     fps : 40,
     ieFps : 30,
     origin : 'center center',
-    cornerOrigin : true,
     link : 'cancel',
     normalizeDegreeAfterComplete : true
   },
@@ -264,6 +263,5 @@ Element.Properties.rotate = {
   }
 
 };
-
 
 })(document.id,$$);
