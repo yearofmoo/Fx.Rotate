@@ -8,17 +8,20 @@ body {
   overflow:hidden;
 }
 #r {
-  width:200px;
+  width:300px;
   border-radius:10px;
-  height:200px;
+  height:300px;
   position:absolute;
   top:50%;
   left:50%;
+  line-height:50px;
+  font-size:1.2em;
+  color:white;
+  background:blue;
   margin-left:-120px;
   margin-top:-120px;
-  background:url(./icon.png) no-repeat center center red;
   border:20px solid rgba(0,0,0,0.5);
-  text-indent:-9999px;
+  text-align:center;
   display:inline-block;
   box-shadow:0 0 10px #aaa;
   -webkit-transform: rotate(-30deg);
@@ -29,49 +32,23 @@ body {
 
 <body id="" class=""> 
   <div id="wrapper">
-    <div id="r">hello</div>
+    <div id="r">
+      <p>Click me to rotate</p>
+      <p>Double click to normalize</p>
+    </div>
   </div>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.3.1/mootools-yui-compressed.js"></script>
 <script type="text/javascript" src="./Fx.Rotate.js"></script>
 <script type="text/javascript">
 window.addEvent('domready',function() {
-  var rotator = new Fx.Rotate($('r'),{
-    duration : 1000,
-    transition : 'linear'
+
+  var element = $('r');
+  element.addEvent('click',function(event) {
+    element.rotate('+30');
   });
-
-  $('r').set('rotate',{
-    duration : 500,
-    transition : 'linear'
+  element.addEvent('dblclick',function(event) {
+    element.normalize();
   });
-
-  $('r').addEvents({
-    'mouseenter':function() {
-      rotator.stop();
-      var pos = rotator.getCurrentRotation();
-      var diff = pos % 90;
-      if(diff > 45) {
-        d = 90 - diff;
-        pos = diff + d;
-        $('r').rotate('+'+d);
-      }
-      else {
-        pos -= diff;
-        $('r').rotate(pos);
-      }
-    },
-    'mouseleave':function() {
-      $('r').get('rotate').stop();
-      resume();
-    }
-  });
-
-
-  var resume = function() {
-    rotator.start('+360').chain(resume);
-  };
-
-  resume();
 
 });
 </script>
