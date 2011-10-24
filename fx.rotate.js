@@ -28,6 +28,7 @@ Fx.Rotate = new Class({
     fps : 40,
     ieFps : 30,
     origin : 'center center',
+    cornerOrigin : true,
     link : 'cancel',
     normalizeDegreeAfterComplete : true
   },
@@ -119,7 +120,7 @@ Fx.Rotate = new Class({
 
       style = style.trim();
       if(style.length > 0) {
-        var rotateResults = style.match(/rotate\((\d+).*?\)/);
+        var rotateResults = style.match(/rotate\((-?\d+).*?\)/);
         if(rotateResults && rotateResults.length > 1) {
           rotation = rotateResults && rotateResults.length > 1 ? rotateResults[1] : 0;
         }
@@ -161,7 +162,7 @@ Fx.Rotate = new Class({
         matrix.SizingMethod = 'auto expand';
         if(matrix && matrix.M11) {
           var sintheta = matrix.M12;
-          var cos = Math.asin(sinetha);
+          var cos = Math.asin(sintheta);
           var deg = Math.round((sin * this.HALF_A_CIRCLE) / Math.PI);
           rotation = deg && deg != 0 ? deg : 0;
         }
@@ -238,7 +239,7 @@ Element.implement({
     return rotate;
   },
 
-  normalize : function(skip) {
+  normalizeRotation : function(skip) {
     var rotate = $(this).get('rotate');
     rotate.normalize(skip);
     return rotate;
@@ -265,3 +266,4 @@ Element.Properties.rotate = {
 };
 
 })(document.id,$$);
+
